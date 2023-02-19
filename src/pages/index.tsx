@@ -1,12 +1,18 @@
 import Head from "next/head";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Home() {
+  const [support, setSupport] = useState(true);
   const [code, setCode] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  const { transcript, listening, resetTranscript } = useSpeechRecognition();
+  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } =
+    useSpeechRecognition();
+
+  useEffect(() => {
+    if (!browserSupportsSpeechRecognition) setSupport(false);
+  }, [browserSupportsSpeechRecognition]);
 
   const handleRecord = async () => {
     if (transcript === "") return;
@@ -29,7 +35,9 @@ export default function Home() {
     setProcessing(false);
   };
 
-  return (
+  return !support ? (
+    <span>Browser doesn&apos;t support speech recognition.</span>
+  ) : (
     <>
       <Head>
         <title>Saywwwhat</title>
