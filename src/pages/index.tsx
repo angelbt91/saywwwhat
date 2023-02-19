@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import MyHead from "@/components/MyHead";
-import Transcript from "@/components/Transcript";
 import RecordButton from "@/components/RecordButton";
-import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
+import LanguageSelector from "@/components/LanguageSelector";
+import Transcript from "@/components/Transcript";
+import { useSpeechRecognition } from "react-speech-recognition";
 
 export default function Home() {
   const [support, setSupport] = useState(true);
   const [code, setCode] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [language, setLanguage] = useState("en-EN");
   const {
     listening,
     transcript,
@@ -20,30 +22,6 @@ export default function Home() {
     if (!browserSupportsSpeechRecognition) setSupport(false);
   }, [browserSupportsSpeechRecognition]);
 
-  const handleClick = async () => {
-    if (!listening) {
-      resetTranscript();
-      return SpeechRecognition.startListening({ continuous: true });
-    }
-
-    if (finalTranscript === "") return;
-
-    setProcessing(true);
-    try {
-      SpeechRecognition.stopListening();
-      const response = await fetch("/api/generator", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: finalTranscript }),
-      });
-      const json = await response.json();
-      setCode(json.code);
-    } catch (e) {
-      console.error(e);
-    }
-    setProcessing(false);
-  };
-
   return (
     <>
       <MyHead />
@@ -53,7 +31,16 @@ export default function Home() {
             <p>This browser does not support speech recognition.</p>
           ) : (
             <div className="flex flex-col h-full justify-center items-center">
-              <RecordButton listening={listening} processing={processing} onClick={handleClick} />
+              <RecordButton
+                listening={listening}
+                processing={processing}
+                setProcessing={setProcessing}
+                finalTranscript={finalTranscript}
+                resetTranscript={resetTranscript}
+                language={language}
+                setCode={setCode}
+              />
+              <LanguageSelector language={language} setLanguage={setLanguage} />
               <Transcript transcript={transcript} />
               {code && (
                 <iframe

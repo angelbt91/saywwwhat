@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import SpeechRecognition from "react-speech-recognition";
 
 interface Props {
   listening: boolean;
   processing: boolean;
-  onClick: () => void;
+  setProcessing: Dispatch<SetStateAction<boolean>>;
+  finalTranscript: string;
+  resetTranscript: () => void;
+  language: string;
+  setCode: Dispatch<SetStateAction<string>>;
 }
 
 const useDots = (enabled: boolean) => {
@@ -24,13 +29,45 @@ const useDots = (enabled: boolean) => {
   return dots;
 };
 
-const RecordButton: React.FC<Props> = ({ listening, processing, onClick }) => {
+const RecordButton: React.FC<Props> = ({
+  listening,
+  processing,
+  setProcessing,
+  finalTranscript,
+  resetTranscript,
+  language,
+  setCode,
+}) => {
   const dots = useDots(processing);
+
+  const handleClick = async () => {
+    if (!listening) {
+      resetTranscript();
+      return SpeechRecognition.startListening({ continuous: true, language });
+    }
+
+    if (finalTranscript === "") return;
+
+    setProcessing(true);
+    try {
+      SpeechRecognition.stopListening();
+      const response = await fetch("/api/generator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: finalTranscript, language }),
+      });
+      const json = await response.json();
+      setCode(json.code);
+    } catch (e) {
+      console.error(e);
+    }
+    setProcessing(false);
+  };
 
   return (
     <button
       disabled={processing}
-      onClick={onClick}
+      onClick={handleClick}
       className="w-72 h-72 rounded-full bg-blue-500 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-2 px-4 rounded"
     >
       {processing
